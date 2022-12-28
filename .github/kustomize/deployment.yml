@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: your_deployment_name
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: your_deployment_name
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: your_deployment_name
+    spec:
+      containers:
+      - name: your_deployment_name
+        image: Location/PROJECT_ID/IMAGE:TAG
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            cpu: 100m
+          limits:
+            cpu: 100m
