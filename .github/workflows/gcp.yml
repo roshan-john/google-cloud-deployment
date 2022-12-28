@@ -1,0 +1,61 @@
+name: Google Cloud Deployment
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+    PROJECT_ID: your_project_id
+    GCR_LOCATION: asia.gcr.io
+    GKE_CLUSTER: your_cluster_name
+    GKE_ZONE: asia-south1-a
+    DEPLOYMENT_NAME:  your_deployment_name
+    IMAGE: your_docker_image_name
+
+
+jobs:
+  Deployment:
+    name: Deployment to GKE
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+         credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY }}'
+
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+          install_components: 'gke-gcloud-auth-plugin'
+
+    - name: Docker configuration
+      run: |-
+        gcloud --quiet auth configure-docker $GCR_LOCATION
+    # - name: Set up GKE credentials
+    #   run: |-
+    #     gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+
+    - name: Connect to Google Cluster
+      uses: google-github-actions/get-gke-credentials@v0
+      with:
+         project_id: your_project_id
+         cluster_name: your_cluster_name
+         location: asia-south1-a
+
+    - name: Datetime Tag for Docker Image
+      id: datetime-git-tag
+      run: echo "today=$(TZ=Asia/Calcutta date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+
+    - name: Build
+      run: |- 
+         docker build --tag "$GCR_LOCATION/$PROJECT_ID/$IMAGE:${{ env.today }}" .
+                
+    - name: Push to Container Registry
+      run:  
+        docker push $GCR_LOCATION/$PROJECT_ID/$IMAGE:${{ env.today }}
